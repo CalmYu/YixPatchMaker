@@ -14,6 +14,8 @@ import org.antlr.v4.misc.Utils;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.DomainObjectSet;
 import org.gradle.api.Project;
+import org.gradle.api.ProjectEvaluationListener;
+import org.gradle.api.ProjectState;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -48,12 +50,24 @@ public class PatchMaker extends BasePlugin {
 
         project.getExtensions().create(HotFixExtension.NAME, HotFixExtension.class);
 
-        final AppExtension appExtension = (AppExtension) project.getExtensions().getByName(EXTENSION_ANDROID);
         // 强制混淆走class处理
-        for (com.android.build.gradle.internal.dsl.BuildType bt : appExtension.getBuildTypes()) {
-            realMinifyEnabledMap.put(bt.getName(), bt.isMinifyEnabled());
-            bt.setMinifyEnabled(true);
-        }
+        project.getGradle().addProjectEvaluationListener(new ProjectEvaluationListener() {
+            @Override
+            public void beforeEvaluate(Project project) {
+
+            }
+
+            @Override
+            public void afterEvaluate(Project project, ProjectState projectState) {
+                // 强制混淆走class处理
+                final AppExtension android = (AppExtension) project.getExtensions().getByName(EXTENSION_ANDROID);
+                for (com.android.build.gradle.internal.dsl.BuildType bt : android.getBuildTypes()) {
+                    realMinifyEnabledMap.put(bt.getName(), bt.isMinifyEnabled());
+                    bt.setMinifyEnabled(true);
+                    bt.setUseProguard(true);
+                }
+            }
+        });
 
     }
 
