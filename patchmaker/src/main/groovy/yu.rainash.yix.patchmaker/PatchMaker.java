@@ -49,18 +49,20 @@ public class PatchMaker extends BasePlugin {
         super.apply(project);
 
         project.getExtensions().create(HotFixExtension.NAME, HotFixExtension.class);
-
+        final AppExtension android = (AppExtension) project.getExtensions().getByName(EXTENSION_ANDROID);
         // 强制混淆走class处理
         project.getGradle().addProjectEvaluationListener(new ProjectEvaluationListener() {
             @Override
-            public void beforeEvaluate(Project project) {
+            public void beforeEvaluate(Project p) {
 
             }
 
             @Override
-            public void afterEvaluate(Project project, ProjectState projectState) {
+            public void afterEvaluate(Project p, ProjectState projectState) {
+                if (!project.getName().equals(p.getName())) {
+                    return;
+                }
                 // 强制混淆走class处理
-                final AppExtension android = (AppExtension) project.getExtensions().getByName(EXTENSION_ANDROID);
                 for (com.android.build.gradle.internal.dsl.BuildType bt : android.getBuildTypes()) {
                     realMinifyEnabledMap.put(bt.getName(), bt.isMinifyEnabled());
                     bt.setMinifyEnabled(true);
@@ -74,9 +76,9 @@ public class PatchMaker extends BasePlugin {
     @Override
     public void afterEvaluate(Project project) {
         super.afterEvaluate(project);
-
-        makePatch(project);
-
+        if (project.getExtensions().getByName(EXTENSION_ANDROID) instanceof AppExtension) {
+            makePatch(project);
+        }
     }
 
     private void makePatch(Project project) {
